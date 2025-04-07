@@ -1,42 +1,44 @@
-const imageUrls = [
-  'https://picsum.photos/id/237/200/300',
-  'https://picsum.photos/id/238/200/300',
-  'https://picsum.photos/id/239/200/300',
+const output = document.getElementById("output");
+const errorDiv = document.getElementById("error");
+const loading = document.getElementById("loading");
+const btn = document.getElementById("download-images-button");
+
+const images = [
+  { url: "https://picsum.photos/id/237/200/300" },
+  { url: "https://picsum.photos/id/238/200/300" },
+  { url: "https://picsum.photos/id/239/200/300" },
 ];
 
-// Helper function to download a single image
 function downloadImage(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.src = url;
 
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load image from ${url}`));
+    img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
   });
 }
 
-// Main function to download and display images
 async function downloadImages() {
-  const loadingDiv = document.getElementById('loading');
-  const outputDiv = document.getElementById('output');
-  const errorDiv = document.getElementById('error');
+  // Reset UI
+  output.innerHTML = "";
+  errorDiv.textContent = "";
+  loading.style.display = "block";
 
-  // Clear previous output and error
-  outputDiv.innerHTML = '';
-  errorDiv.textContent = '';
+  try {
+    // Create an array of image download promises
+    const promises = images.map(image => downloadImage(image.url));
 
-  // Show loading spinner
-  loadingDiv.style.display = 'block';
+    // Wait for all images to download (in order)
+    const downloadedImages = await Promise.all(promises);
 
-  const imagePromises = imageUrls.map(async (url) => {
-    try {
-      const img = await downloadImage(url);
-      outputDiv.appendChild(img); // Append loaded image to output div
-    } catch (error) {
-      errorDiv.textContent += error.message + '\n'; // Append error message
-    }
-  });
-
-  await Promise.all(imagePromises); // Wait for all image promises to settle
-  loadingDiv.style.display = 'none'; // Hide loading spinner after all promises settle
+    // Append images in correct order
+    downloadedImages.forEach(img => output.appendChild(img));
+  } catch (error) {
+    errorDiv.textContent = error.message;
+  } finally {
+    loading.style.display = "none";
+  }
 }
+
+btn.addEventListener("click", downloadImages);
